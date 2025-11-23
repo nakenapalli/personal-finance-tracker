@@ -1,5 +1,6 @@
 "use client"
 
+import { appTheme, getPrimaryColor } from "@/lib/theme"
 import { useSession, signOut } from "next-auth/react"
 import { useRouter } from "next/navigation"
 import { useEffect, useState } from "react"
@@ -65,15 +66,28 @@ export default function DashboardPage() {
     <div className="min-h-screen bg-gray-50 p-8">
       <div className="max-w-6xl mx-auto">
         <div className="flex justify-between items-center mb-8">
-          <h1 className="text-3xl font-bold text-purple-700">voir</h1>
+          {/* Left side - Logo */}
+          <div className="flex items-center gap-2">
+            <appTheme.logo.icon
+              sx={{
+                color: getPrimaryColor(700),
+                fontSize: '38px'
+              }}
+            />
+            <h2 className="text-3xl text-purple-700 font-bold">
+              {appTheme.logo.text}
+            </h2>
+          </div>
+
+          {/* Right side - Sign Out */}
           <button
             onClick={() => signOut({ callbackUrl: "/login" })}
-            className="px-4 py-2 text-sm text-gray-700 hover:text-gray-900"
+            className="px-4 py-2 text-sm text-gray-700 hover:text-gray-900 whitespace-nowrap"
           >
             Sign Out
           </button>
         </div>
-        
+
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
           <div className="bg-white rounded-lg shadow p-6">
             <h2 className="text-lg font-semibold text-gray-600 mb-2">Total Spending</h2>
@@ -83,7 +97,7 @@ export default function DashboardPage() {
           <div className="bg-white rounded-lg shadow p-6">
             <h2 className="text-lg font-semibold text-gray-600 mb-2">By Category</h2>
             <div className="space-y-2">
-              {Object.entries(categoryTotals).map(([category, amount]) => (
+              {Object.entries(categoryTotals).sort(([, amount1], [, amount2]) => amount2 - amount1).map(([category, amount]) => (
                 <div key={category} className="flex justify-between text-sm">
                   <span className="text-gray-700">{category}</span>
                   <span className="font-semibold text-gray-500">${amount.toFixed(2)}</span>

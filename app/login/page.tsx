@@ -4,8 +4,9 @@ import { signIn } from "next-auth/react"
 import { useState } from "react"
 import { useRouter } from "next/navigation"
 import React from "react"
-import { Button, ToggleButton, ToggleButtonGroup } from "@mui/material"
+import { Button, Icon, ToggleButton, ToggleButtonGroup } from "@mui/material"
 import bcrypt from "bcryptjs"
+import { appTheme, getPrimaryColor } from "@/lib/theme"
 
 export default function LoginPage() {
   const [username, setUsername] = useState("")
@@ -43,9 +44,9 @@ export default function LoginPage() {
     setIsLoading(false)
 
     if (result?.error) {
-      formMode === "login" 
-      ? setError("Invalid username or password")
-      : setError("Registration failed. Please try again.")
+      formMode === "login"
+        ? setError("Invalid username or password")
+        : setError("Registration failed. Please try again.")
     } else {
       router.push("/dashboard")
       router.refresh()
@@ -55,8 +56,14 @@ export default function LoginPage() {
   return (
     <div className="flex min-h-screen items-center justify-center bg-gray-50">
       <div className="w-full max-w-md space-y-8 rounded-lg bg-white p-8 shadow">
-        <div>
-          <h2 className="text-center text-3xl text-purple-700 font-bold">voir</h2>
+        <div className="relative w-full flex justify-center items-center">
+          <appTheme.logo.icon
+            className="absolute left-[calc(50%-6.25rem)]"
+            sx={{
+              color: getPrimaryColor(700),
+              fontSize: '32px'
+            }} />
+          <h2 className="text-3xl text-purple-700 font-bold">{appTheme.logo.text}</h2>
         </div>
         <div>
           <LogInRegisterToggle mode={formMode} onToggle={(mode: string) => setFormMode(mode)} />
@@ -68,7 +75,7 @@ export default function LoginPage() {
             </div>
           )}
           <div>
-            <label htmlFor="username" className="block text-sm font-medium text-purple-700">
+            <label htmlFor="username" className="block text-sm font-medium text-app-primary">
               Username
             </label>
             <input

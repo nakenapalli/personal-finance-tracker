@@ -12,7 +12,7 @@ export async function GET() {
 
   const expenses = await prisma.expense.findMany({
     where: { userId: parseInt(session.user.id) },
-    orderBy: { date: "desc" }
+    orderBy: { createdAt: "desc" }
   })
 
   return NextResponse.json(expenses)

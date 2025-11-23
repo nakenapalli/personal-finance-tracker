@@ -1,7 +1,8 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { SessionProvider } from "./components/SessionProvider";
+import { appTheme } from "@/lib/theme";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -14,9 +15,17 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Personal Finance Tracker",
-  description: "Track your expenses",
+  title: appTheme.metadata.title,
+  description: appTheme.metadata.description,
+  keywords: appTheme.metadata.keywords,
+  authors: [{ name: appTheme.metadata.author }]
 };
+
+export const viewport: Viewport = {
+  themeColor: appTheme.metadata.themeColor,
+  width: 'device-width',
+  initialScale: 1,
+}
 
 export default function RootLayout({
   children,
