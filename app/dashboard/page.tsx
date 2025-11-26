@@ -65,6 +65,8 @@ export default function DashboardPage() {
   return (
     <div className="min-h-screen bg-gray-50 p-8">
       <div className="max-w-6xl mx-auto">
+
+        {/* Top Bar */}
         <div className="flex justify-between items-center mb-8">
           {/* Left side - Logo */}
           <div className="flex items-center gap-2">
@@ -88,68 +90,77 @@ export default function DashboardPage() {
           </button>
         </div>
 
+        {/* Summary Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
           <div className="bg-white rounded-lg shadow p-6">
-            <h2 className="text-lg font-semibold text-gray-600 mb-2">Total Spending</h2>
+            <h2 className="text-lg font-semibold text-gray-600 mb-2">Money Out</h2>
             <p className="text-4xl font-bold text-purple-700">${totalSpending.toFixed(2)}</p>
-          </div>
 
-          <div className="bg-white rounded-lg shadow p-6">
-            <h2 className="text-lg font-semibold text-gray-600 mb-2">By Category</h2>
-            <div className="space-y-2">
-              {Object.entries(categoryTotals).sort(([, amount1], [, amount2]) => amount2 - amount1).map(([category, amount]) => (
-                <div key={category} className="flex justify-between text-sm">
-                  <span className="text-gray-700">{category}</span>
-                  <span className="font-semibold text-gray-500">${amount.toFixed(2)}</span>
-                </div>
-              ))}
+            <div className="bg-white rounded-lg p-6">
+              <h2 className="text-lg font-semibold text-gray-600 mb-2">By Category</h2>
+              <div className="space-y-2">
+                {Object.entries(categoryTotals).sort(([, amount1], [, amount2]) => amount2 - amount1).map(([category, amount]) => (
+                  <div key={category} className="flex justify-between text-sm">
+                    <span className="text-gray-700">{category}</span>
+                    <span className="font-semibold text-gray-500">${amount.toFixed(2)}</span>
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
-        </div>
 
-        <button
-          onClick={() => setShowForm(!showForm)}
-          className="bg-purple-700 text-white px-6 py-3 rounded-lg hover:bg-purple-700 mb-8 font-medium"
-        >
-          {showForm ? "Cancel" : "Add Expense"}
-        </button>
+          <div className="bg-white rounded-lg shadow">
+            <div className="flex justify-between items-center border-b">
+              <h2 className="text-xl font-semibold text-gray-600 p-6">Recent Expenses</h2>
+              <button
+                onClick={() => setShowForm(!showForm)}
+                className="bg-purple-700 text-white px-6 py-2 rounded-lg hover:bg-purple-700 font-medium mr-6"
+              >
+                {showForm ? "Cancel" : "Add Expense"}
+              </button>
+            </div>
 
-        {showForm && (
-          <ExpenseForm
-            onSuccess={() => {
-              setShowForm(false)
-              fetchExpenses()
-            }}
-          />
-        )}
+            {showForm && (
+              <ExpenseForm
+                onSuccess={() => {
+                  setShowForm(false)
+                  fetchExpenses()
+                }}
+              />
+            )}
 
-        <div className="bg-white rounded-lg shadow">
-          <div className="p-6 border-b">
-            <h2 className="text-xl font-semibold text-gray-600">Recent Expenses</h2>
-          </div>
-          <div className="divide-y">
-            {expenses.length === 0 ? (
-              <div className="p-8 text-center text-gray-500">
-                No expenses yet. Click "Add Expense" to get started!
-              </div>
-            ) : (
-              expenses.map((expense) => (
-                <div key={expense.id} className="p-6 flex justify-between items-center hover:bg-gray-50">
-                  <div>
-                    <p className="font-semibold text-gray-900">{expense.name}</p>
-                    <p className="text-sm text-gray-600">{expense.category}</p>
-                    <p className="text-xs text-gray-500 mt-1">
-                      {new Date(expense.date).toLocaleDateString()}
+            <div className="divide-y">
+              {expenses.length === 0 ? (
+                <div className="p-8 text-center text-gray-500">
+                  No expenses yet. Click "Add Expense" to get started!
+                </div>
+              ) : (
+                expenses.map((expense) => (
+                  <div key={expense.id} className="p-6 flex justify-between items-center hover:bg-gray-50">
+                    <div>
+                      <p className="font-semibold text-gray-900">{expense.name}</p>
+                      <p className="text-sm text-gray-600">{expense.category}</p>
+                      <p className="text-xs text-gray-500 mt-1">
+                        {new Date(expense.date).toLocaleDateString()}
+                      </p>
+                    </div>
+                    <p className="text-lg font-bold text-gray-900">
+                      ${expense.amount.toFixed(2)}
                     </p>
                   </div>
-                  <p className="text-lg font-bold text-gray-900">
-                    ${expense.amount.toFixed(2)}
-                  </p>
-                </div>
-              ))
-            )}
+                ))
+              )}
+            </div>
+
+
+
+
           </div>
         </div>
+
+
+
+
       </div>
     </div>
   )
