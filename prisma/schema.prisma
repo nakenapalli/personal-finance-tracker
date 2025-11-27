@@ -13,9 +13,11 @@ datasource db {
 model User {
   id        Int       @id @default(autoincrement())
   username  String    @unique
-  password  String    // Will store hashed password
+  password  String
   createdAt DateTime  @default(now())
   expenses  Expense[]
+  budgets   Budget[]   // Add this
+  income    Float?     // Add this - monthly income
 }
 
 model Expense {
@@ -27,4 +29,17 @@ model Expense {
   createdAt DateTime @default(now())
   userId    Int
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+// Add new Budget model
+model Budget {
+  id        Int      @id @default(autoincrement())
+  category  String
+  amount    Float    // Monthly budget amount
+  userId    Int
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  @@unique([userId, category]) // One budget per category per user
 }

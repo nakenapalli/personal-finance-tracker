@@ -4,6 +4,7 @@ import { appTheme, getPrimaryColor } from "@/lib/theme"
 import { useSession, signOut } from "next-auth/react"
 import { useRouter } from "next/navigation"
 import { useEffect, useState } from "react"
+import BudgetAdvisor from "../components/BudgetAdvisor"
 
 interface Expense {
   id: number
@@ -60,6 +61,19 @@ export default function DashboardPage() {
         <div className="text-lg">Loading...</div>
       </div>
     )
+  }
+
+  // If no session or no user ID
+  if (!session || !session.user || !session.user.id) {
+    return <div className="p-8">Not authenticated</div>
+  }
+
+  // Convert string → number ONCE at the boundary
+  const userId = Number(session.user.id)
+
+  // Safety check (prevents NaN bugs)
+  if (Number.isNaN(userId)) {
+    return <div className="p-8 text-red-600">Invalid user session</div>
   }
 
   return (
@@ -152,7 +166,9 @@ export default function DashboardPage() {
               )}
             </div>
 
-
+            <div className="mt-8">
+              <BudgetAdvisor userId={userId} />
+            </div>
 
 
           </div>

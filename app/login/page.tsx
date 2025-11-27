@@ -4,8 +4,7 @@ import { signIn } from "next-auth/react"
 import { useState } from "react"
 import { useRouter } from "next/navigation"
 import React from "react"
-import { Button, Icon, ToggleButton, ToggleButtonGroup } from "@mui/material"
-import bcrypt from "bcryptjs"
+import { ToggleButton, ToggleButtonGroup } from "@mui/material"
 import { appTheme, getPrimaryColor } from "@/lib/theme"
 
 export default function LoginPage() {
