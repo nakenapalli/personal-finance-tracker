@@ -4,7 +4,6 @@ import { appTheme, getPrimaryColor } from "@/lib/theme"
 import { useSession, signOut } from "next-auth/react"
 import { useRouter } from "next/navigation"
 import { useEffect, useState } from "react"
-import BudgetAdvisor from "../components/BudgetAdvisor"
 
 interface Expense {
   id: number
@@ -18,6 +17,7 @@ export default function DashboardPage() {
   const { data: session, status } = useSession()
   const router = useRouter()
   const [expenses, setExpenses] = useState<Expense[]>([])
+  const [budgets, setBudgets] = useState<any[]>([])
   const [showForm, setShowForm] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
 
@@ -30,6 +30,7 @@ export default function DashboardPage() {
   useEffect(() => {
     if (status === "authenticated") {
       fetchExpenses()
+      fetchBudgets()
     }
   }, [status])
 
@@ -48,12 +49,39 @@ export default function DashboardPage() {
     }
   }
 
+  const fetchBudgets = async () => {
+    setIsLoading(true)
+    try {
+      const res = await fetch("/api/budgets")
+      if (res.ok) {
+        const data = await res.json()
+        setBudgets(data)
+      }
+    } catch (error) {
+      console.error("Error fetching budgets:", error)
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
   const totalSpending = expenses.reduce((sum, exp) => sum + exp.amount, 0)
 
   const categoryTotals = expenses.reduce((acc, exp) => {
     acc[exp.category] = (acc[exp.category] || 0) + exp.amount
     return acc
   }, {} as Record<string, number>)
+
+  // build a lookup for budgets by category for quick access
+  const budgetMap = budgets.reduce((acc, b) => {
+    acc[b.category] = Number(b.amount)
+    return acc
+  }, {} as Record<string, number>)
+
+  // union categories from both budgets and expenses so we show categories that only have budgets too
+  const allCategories = Array.from(new Set([
+    ...Object.keys(categoryTotals),
+    ...budgets.map((b) => b.category),
+  ]))
 
   if (status === "loading" || isLoading) {
     return (
@@ -105,25 +133,48 @@ export default function DashboardPage() {
         </div>
 
         {/* Summary Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-          <div className="bg-white rounded-lg shadow p-6">
-            <h2 className="text-lg font-semibold text-gray-600 mb-2">Money Out</h2>
-            <p className="text-4xl font-bold text-purple-700">${totalSpending.toFixed(2)}</p>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8 items-start">
+
+          {/* Summary */}
+          <div className="bg-white rounded-lg shadow max-h-[80vh] flex flex-col overflow-hidden">
+            <h2 className="text-lg font-semibold text-gray-600 ml-5 mt-5">Money Out</h2>
+            <p className="text-4xl font-bold text-purple-700 ml-5 mt-2">${totalSpending.toFixed(2)}</p>
 
             <div className="bg-white rounded-lg p-6">
               <h2 className="text-lg font-semibold text-gray-600 mb-2">By Category</h2>
               <div className="space-y-2">
-                {Object.entries(categoryTotals).sort(([, amount1], [, amount2]) => amount2 - amount1).map(([category, amount]) => (
-                  <div key={category} className="flex justify-between text-sm">
-                    <span className="text-gray-700">{category}</span>
-                    <span className="font-semibold text-gray-500">${amount.toFixed(2)}</span>
-                  </div>
-                ))}
+                {allCategories
+                  .sort((a, b) => (categoryTotals[b] || 0) - (categoryTotals[a] || 0))
+                  .map((category) => {
+                    const spent = categoryTotals[category] || 0
+                    const budgetAmount = budgetMap[category]
+
+                    const over = typeof budgetAmount !== "undefined" && spent > budgetAmount
+
+                    return (
+                      <div key={category} className="flex justify-between items-center text-sm">
+                        <span className="text-gray-700">{category}</span>
+
+                        <div className="text-right">
+                          {typeof budgetAmount !== "undefined" ? (
+                            <p className={`font-semibold ${over ? 'text-red-900' : 'text-app-primary'}`}>
+                              {`$${spent.toFixed(2)}`} <span className="text-xs text-gray-400">/</span> <span className="text-xs text-gray-600">{`$${budgetAmount.toFixed(2)}`}</span>
+                            </p>
+                          ) : (
+                            <p className="font-semibold text-gray-500">{`$${spent.toFixed(2)}`}</p>
+                          )}
+                        </div>
+                      </div>
+                    )
+                  })}
               </div>
             </div>
           </div>
 
-          <div className="bg-white rounded-lg shadow">
+          
+
+          {/* Expense List */}
+          <div className="bg-white rounded-lg shadow h-[145vh] row-span-2 flex flex-col overflow-hidden">
             <div className="flex justify-between items-center border-b">
               <h2 className="text-xl font-semibold text-gray-600 p-6">Recent Expenses</h2>
               <button
@@ -143,35 +194,35 @@ export default function DashboardPage() {
               />
             )}
 
-            <div className="divide-y">
+            <div className="flex-1 overflow-y-auto divide-y">
               {expenses.length === 0 ? (
-                <div className="p-8 text-center text-gray-500">
-                  No expenses yet. Click "Add Expense" to get started!
+                <div className="p-8 text-center text-gray-700">
+                  No expenses yet — click the Add Expense button to get started!
                 </div>
               ) : (
                 expenses.map((expense) => (
-                  <div key={expense.id} className="p-6 flex justify-between items-center hover:bg-gray-50">
+                  <div
+                    key={expense.id}
+                    className="p-6 flex justify-between items-center hover:bg-gray-50"
+                  >
                     <div>
-                      <p className="font-semibold text-gray-900">{expense.name}</p>
+                      <p className="font-semibold text-gray-700">{expense.name}</p>
                       <p className="text-sm text-gray-600">{expense.category}</p>
                       <p className="text-xs text-gray-500 mt-1">
                         {new Date(expense.date).toLocaleDateString()}
                       </p>
                     </div>
-                    <p className="text-lg font-bold text-gray-900">
+                    <p className="text-lg font-bold text-app-primary">
                       ${expense.amount.toFixed(2)}
                     </p>
                   </div>
                 ))
               )}
             </div>
-
-            <div className="mt-8">
-              <BudgetAdvisor userId={userId} />
-            </div>
-
-
           </div>
+
+          {/* budgets now shown in the left summary card; removed separate budgets card */}
+          
         </div>
 
 

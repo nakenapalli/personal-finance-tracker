@@ -13,7 +13,7 @@ export async function GET() {
 
   const budgets = await prisma.budget.findMany({
     where: { userId: parseInt(session.user.id) },
-    orderBy: { category: 'asc' }
+    orderBy: { category: 'desc' }
   })
 
   return NextResponse.json(budgets)
