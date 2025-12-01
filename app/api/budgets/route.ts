@@ -28,7 +28,8 @@ export async function POST(request: Request) {
   }
 
   try {
-    const { budgets } = await request.json()
+    const body = await request.json()
+    const budgets = (body?.budgets ?? []) as Array<{ category: string; amount: number }>
     const userId = parseInt(session.user.id)
 
     // Delete existing budgets and create new ones
@@ -37,9 +38,9 @@ export async function POST(request: Request) {
     })
 
     const created = await prisma.budget.createMany({
-      data: budgets.map((b: any) => ({
+      data: budgets.map((b) => ({
         category: b.category,
-        amount: parseFloat(b.amount),
+        amount: typeof b.amount === 'number' ? b.amount : parseFloat(String(b.amount)),
         userId
       }))
     })

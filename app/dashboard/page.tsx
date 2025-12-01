@@ -4,6 +4,7 @@ import { appTheme, getPrimaryColor } from "@/lib/theme"
 import { useSession, signOut } from "next-auth/react"
 import { useRouter } from "next/navigation"
 import { useEffect, useState } from "react"
+import PieChart from "../components/PieChart"
 
 interface Expense {
   id: number
@@ -17,9 +18,10 @@ export default function DashboardPage() {
   const { data: session, status } = useSession()
   const router = useRouter()
   const [expenses, setExpenses] = useState<Expense[]>([])
-  const [budgets, setBudgets] = useState<any[]>([])
+  const [budgets, setBudgets] = useState<{ id?: number; category: string; amount: number }[]>([])
   const [showForm, setShowForm] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
+  const [expanded, setExpanded] = useState(false)
 
   useEffect(() => {
     if (status === "unauthenticated") {
@@ -65,6 +67,7 @@ export default function DashboardPage() {
   }
 
   const totalSpending = expenses.reduce((sum, exp) => sum + exp.amount, 0)
+  const totalBudget = budgets.reduce((sum, b) => sum + b.amount, 0)
 
   const categoryTotals = expenses.reduce((acc, exp) => {
     acc[exp.category] = (acc[exp.category] || 0) + exp.amount
@@ -104,6 +107,29 @@ export default function DashboardPage() {
     return <div className="p-8 text-red-600">Invalid user session</div>
   }
 
+
+  // prepare pie chart slices sorted by spent
+  const categoryEntries = allCategories.map((c) => ({
+    category: c,
+    spent: categoryTotals[c] || 0,
+  }))
+
+  const sortedBySpent = [...categoryEntries].sort((a, b) => b.spent - a.spent)
+  const top5 = sortedBySpent.slice(0, 5)
+
+  const colorPalette = [
+    '#7c3aed', // purple
+    '#06b6d4', // teal
+    '#f97316', // orange
+    '#ef4444', // red
+    '#10b981', // green
+    '#6366f1', // indigo
+    '#f59e0b', // amber
+    '#3b82f6', // blue
+  ]
+
+  const slices = sortedBySpent.map((e, i) => ({ value: e.spent, label: e.category, color: colorPalette[i % colorPalette.length] }))
+
   return (
     <div className="min-h-screen bg-gray-50 p-8">
       <div className="max-w-6xl mx-auto">
@@ -132,46 +158,87 @@ export default function DashboardPage() {
           </button>
         </div>
 
+
         {/* Summary Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8 items-start">
 
+
           {/* Summary */}
-          <div className="bg-white rounded-lg shadow max-h-[80vh] flex flex-col overflow-hidden">
-            <h2 className="text-lg font-semibold text-gray-600 ml-5 mt-5">Money Out</h2>
-            <p className="text-4xl font-bold text-purple-700 ml-5 mt-2">${totalSpending.toFixed(2)}</p>
+          <button
+            onClick={() => setExpanded(!expanded)}
+            className="text-xs text-gray-400 hover:text-gray-600"
+            aria-expanded={expanded}
+          >
+            <div className="bg-white rounded-lg shadow max-h-[145vh] flex flex-col">
+              {/* Summary Header */}
+              <div className="flex mb-5 justify-between">
+                <div className="flex flex-col  gap-2 ml-5">
+                  <div className="text-left">
+                    <h2 className="text-lg font-semibold text-app-primary mt-5">Money Out</h2>
+                    <p className="text-4xl font-bold text-app-primary">${totalSpending.toFixed(2)}</p>
+                  </div>
 
-            <div className="bg-white rounded-lg p-6">
-              <h2 className="text-lg font-semibold text-gray-600 mb-2">By Category</h2>
-              <div className="space-y-2">
-                {allCategories
-                  .sort((a, b) => (categoryTotals[b] || 0) - (categoryTotals[a] || 0))
-                  .map((category) => {
-                    const spent = categoryTotals[category] || 0
-                    const budgetAmount = budgetMap[category]
+                  {/* <div className="h-15"></div> */}
 
-                    const over = typeof budgetAmount !== "undefined" && spent > budgetAmount
+                  <div className="text-right">
+                    <p className="text-3xl font-semibold text-gray-400 mt-2">{totalBudget.toFixed(2)}</p>
+                    <h2 className="text-md font-sans text-gray-400">Total Budget</h2>
+                  </div>
 
-                    return (
-                      <div key={category} className="flex justify-between items-center text-sm">
-                        <span className="text-gray-700">{category}</span>
+                </div>
 
-                        <div className="text-right">
-                          {typeof budgetAmount !== "undefined" ? (
-                            <p className={`font-semibold ${over ? 'text-red-900' : 'text-app-primary'}`}>
-                              {`$${spent.toFixed(2)}`} <span className="text-xs text-gray-400">/</span> <span className="text-xs text-gray-600">{`$${budgetAmount.toFixed(2)}`}</span>
-                            </p>
-                          ) : (
-                            <p className="font-semibold text-gray-500">{`$${spent.toFixed(2)}`}</p>
-                          )}
-                        </div>
+
+                {/* Pie Chart and Top Categories */}
+                <div className="flex flex-col items-center gap-2 mt-5 mr-15">
+                  <PieChart slices={slices.slice(0, 6)} size={160} />
+                  <div className="grid grid-cols-1 items-start gap-3 mt-5">
+
+                    {top5.map((t, idx) => (
+                      <div key={t.category} className="flex items-center gap-3">
+                        <div style={{ width: 12, height: 12, background: colorPalette[idx % colorPalette.length], borderRadius: 3 }} />
+                        <div className="flex-1 text-sm text-gray-700 text-left">{t.category}</div>
+                        <div className="flex-1 text-sm text-gray-500 text-right">{`$${t.spent.toFixed(2)}`}</div>
                       </div>
-                    )
-                  })}
+                    ))}
+                  </div>
+
+                </div>
+              </div>
+
+              {/* Expanded spending details */}
+              <div className="space-y-2">
+                {expanded && (
+                  allCategories
+                    .sort((a, b) => (categoryTotals[b] || 0) - (categoryTotals[a] || 0))
+                    .map((category) => {
+                      const spent = categoryTotals[category] || 0
+                      const budgetAmount = budgetMap[category]
+
+                      const over = typeof budgetAmount !== "undefined" && spent > budgetAmount
+
+                      return (
+                        <div key={category} className="flex justify-between items-center text-sm">
+                          <span className="text-gray-700">{category}</span>
+
+                          <div className="text-right">
+                            {typeof budgetAmount !== "undefined" ? (
+                              <p className={`font-semibold ${over ? 'text-red-900' : 'text-app-primary'}`}>
+                                {`$${spent.toFixed(2)}`} <span className="text-xs text-gray-400">/</span> <span className="text-xs text-gray-600">{`$${budgetAmount.toFixed(2)}`}</span>
+                              </p>
+                            ) : (
+                              <p className="font-semibold text-gray-500">{`$${spent.toFixed(2)}`}</p>
+                            )}
+                          </div>
+                        </div>
+                      )
+                    }))}
               </div>
             </div>
-          </div>
 
-          
+            <p className="text-gray-400"> {expanded ? 'Tap to collapse' : 'Tap to expand'}</p>
+          </button>
+
+
 
           {/* Expense List */}
           <div className="bg-white rounded-lg shadow h-[145vh] row-span-2 flex flex-col overflow-hidden">
@@ -222,7 +289,7 @@ export default function DashboardPage() {
           </div>
 
           {/* budgets now shown in the left summary card; removed separate budgets card */}
-          
+
         </div>
 
 

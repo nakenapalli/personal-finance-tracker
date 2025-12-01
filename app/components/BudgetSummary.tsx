@@ -28,7 +28,7 @@ interface BudgetAdvice {
   summary: string
 }
 
-export default function BudgetSummary({ userId, budgets }: { userId: number, budgets: any[] }) {
+export default function BudgetSummary({ userId, budgets }: { userId: number, budgets: { id?: number; category: string; amount: number }[] }) {
   const [income, setIncome] = useState("")
   const [isLoading, setIsLoading] = useState(false)
   const [advice, setAdvice] = useState<BudgetAdvice | null>(null)
