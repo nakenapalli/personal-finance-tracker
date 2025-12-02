@@ -30,18 +30,25 @@ function describeArc(cx: number, cy: number, r: number, startAngle: number, endA
 
 export default function PieChart({ slices, size = 140 }: { slices: Slice[]; size?: number }) {
   const total = slices.reduce((s, sl) => s + sl.value, 0) || 1
-  let startAngle = 0
+  // compute start/end for each segment without side-effects
+  const { segments } = slices.reduce(
+    (acc, s) => {
+      const value = (s.value / total) * 360
+      const start = acc.current
+      const end = start + value
+      acc.segments.push({ ...s, start, end })
+      acc.current = end
+      return acc
+    },
+    { current: 0, segments: [] as Array<Slice & { start: number; end: number }> }
+  )
 
   return (
     <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} className="mx-auto">
-      {slices.map((s, i) => {
-        const value = (s.value / total) * 360
-        const path = describeArc(size / 2, size / 2, size / 2 - 8, startAngle, startAngle + value)
-        startAngle += value
+      {segments.map((s, i) => {
+        const path = describeArc(size / 2, size / 2, size / 2 - 8, s.start, s.end)
 
-        return (
-          <path key={i} d={path} fill={s.color} stroke="#fff" strokeWidth={1} />
-        )
+        return <path key={i} d={path} fill={s.color} stroke="#fff" strokeWidth={1} />
       })}
 
       {/* center hole */}

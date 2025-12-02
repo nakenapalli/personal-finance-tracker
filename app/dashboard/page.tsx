@@ -112,10 +112,11 @@ export default function DashboardPage() {
   const categoryEntries = allCategories.map((c) => ({
     category: c,
     spent: categoryTotals[c] || 0,
+    budget: budgetMap[c] || 0
   }))
 
-  const sortedBySpent = [...categoryEntries].sort((a, b) => b.spent - a.spent)
-  const top5 = sortedBySpent.slice(0, 5)
+  const sortedCategoryEntries = [...categoryEntries].sort((a, b) => b.spent - a.spent)
+  const top5 = sortedCategoryEntries.slice(0, 5)
 
   const colorPalette = [
     '#7c3aed', // purple
@@ -128,7 +129,7 @@ export default function DashboardPage() {
     '#3b82f6', // blue
   ]
 
-  const slices = sortedBySpent.map((e, i) => ({ value: e.spent, label: e.category, color: colorPalette[i % colorPalette.length] }))
+  const slices = sortedCategoryEntries.map((e, i) => ({ value: e.spent, label: e.category, color: colorPalette[i % colorPalette.length] }))
 
   return (
     <div className="min-h-screen bg-gray-50 p-8">
@@ -159,83 +160,91 @@ export default function DashboardPage() {
         </div>
 
 
-        {/* Summary Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8 items-start">
+        {/* Dashboard Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-[1.3fr_1fr] gap-6 mb-8">
 
 
           {/* Summary */}
           <button
             onClick={() => setExpanded(!expanded)}
-            className="text-xs text-gray-400 hover:text-gray-600"
+            className="text-xs text-gray-400 hover:text-gray-600 w-full"
             aria-expanded={expanded}
           >
-            <div className="bg-white rounded-lg shadow max-h-[145vh] flex flex-col">
+            <div className="bg-white rounded-lg shadow flex flex-col p-5">
               {/* Summary Header */}
-              <div className="flex mb-5 justify-between">
-                <div className="flex flex-col  gap-2 ml-5">
-                  <div className="text-left">
-                    <h2 className="text-lg font-semibold text-app-primary mt-5">Money Out</h2>
-                    <p className="text-4xl font-bold text-app-primary">${totalSpending.toFixed(2)}</p>
+              <div className="flex flex-col gap-3">
+                <div className="flex flex-row justify-between items-center w-full">
+                  <div className="flex flex-col gap-3 ml-5">
+                    <div className="text-left">
+                      <h2 className="text-lg font-semibold text-app-primary">Money Out</h2>
+                      <p className="text-4xl font-bold text-app-primary">{totalSpending.toFixed(2)}</p>
+                    </div>
+                    <div className="text-right">
+                      <h2 className="text-md font-sans text-gray-400">Total Budget</h2>
+                      <p className="text-3xl font-semibold text-gray-400">{totalBudget.toFixed(2)}</p>
+                    </div>
                   </div>
 
-                  {/* <div className="h-15"></div> */}
-
-                  <div className="text-right">
-                    <p className="text-3xl font-semibold text-gray-400 mt-2">{totalBudget.toFixed(2)}</p>
-                    <h2 className="text-md font-sans text-gray-400">Total Budget</h2>
+                  <div className="p-3 w-1/2">
+                    <PieChart slices={slices.slice(0, 6)} size={160} />
                   </div>
 
-                </div>
 
-
-                {/* Pie Chart and Top Categories */}
-                <div className="flex flex-col items-center gap-2 mt-5 mr-15">
-                  <PieChart slices={slices.slice(0, 6)} size={160} />
-                  <div className="grid grid-cols-1 items-start gap-3 mt-5">
+                  <div className="grid grid-cols-1 items-start flex-row gap-2 w-[20vw] mr-5">
 
                     {top5.map((t, idx) => (
-                      <div key={t.category} className="flex items-center gap-3">
+                      <div key={t.category} className="flex flex-row items-center gap-3">
                         <div style={{ width: 12, height: 12, background: colorPalette[idx % colorPalette.length], borderRadius: 3 }} />
-                        <div className="flex-1 text-sm text-gray-700 text-left">{t.category}</div>
-                        <div className="flex-1 text-sm text-gray-500 text-right">{`$${t.spent.toFixed(2)}`}</div>
+                        <div className="flex justify-between w-full">
+                          <div className="text-sm text-gray-700 text-left">{t.category}</div>
+                          <div className="text-sm text-gray-500 text-right">{t.spent.toFixed(2)}</div>
+                        </div>
                       </div>
                     ))}
                   </div>
+
 
                 </div>
               </div>
 
               {/* Expanded spending details */}
-              <div className="space-y-2">
-                {expanded && (
-                  allCategories
-                    .sort((a, b) => (categoryTotals[b] || 0) - (categoryTotals[a] || 0))
-                    .map((category) => {
-                      const spent = categoryTotals[category] || 0
-                      const budgetAmount = budgetMap[category]
+              {expanded && (
+                <div className="flex flex-col mt-6 gap-2 p-5">
+                  {
+                    allCategories
+                      .sort((a, b) => (categoryTotals[b] || 0) - (categoryTotals[a] || 0))
+                      .map((category) => {
+                        const spent = categoryTotals[category] || 0
+                        const budgetAmount = budgetMap[category]
 
-                      const over = typeof budgetAmount !== "undefined" && spent > budgetAmount
+                        const over = typeof budgetAmount !== "undefined" && spent > budgetAmount
 
-                      return (
-                        <div key={category} className="flex justify-between items-center text-sm">
-                          <span className="text-gray-700">{category}</span>
+                        return (
+                          <div key={category} className="flex justify-between items-center text-sm w-full">
+                            <span className="text-gray-700">{category}</span>
 
-                          <div className="text-right">
-                            {typeof budgetAmount !== "undefined" ? (
-                              <p className={`font-semibold ${over ? 'text-red-900' : 'text-app-primary'}`}>
-                                {`$${spent.toFixed(2)}`} <span className="text-xs text-gray-400">/</span> <span className="text-xs text-gray-600">{`$${budgetAmount.toFixed(2)}`}</span>
-                              </p>
-                            ) : (
-                              <p className="font-semibold text-gray-500">{`$${spent.toFixed(2)}`}</p>
-                            )}
+                            <div className="text-right">
+                              {typeof budgetAmount !== "undefined" ? (
+                                <p className={`font-semibold ${over ? 'text-red-900' : 'text-app-primary'}`}>
+                                  {spent.toFixed(2)} 
+                                  <span className="text-xs text-gray-400">/</span> 
+                                  <span className="text-xs text-gray-600">{budgetAmount.toFixed(2)}</span>
+                                </p>
+                              ) : (
+                                <p className="font-semibold text-gray-500">{spent.toFixed(2)}</p>
+                              )}
+                            </div>
                           </div>
-                        </div>
-                      )
-                    }))}
-              </div>
+                        )
+                      }
+                      )}
+                </div>
+              )}
+
+              <p className="text-[10px] text-gray-400 text-right mr-5"> {expanded ? 'Tap to collapse' : 'Tap to expand'}</p>
             </div>
 
-            <p className="text-gray-400"> {expanded ? 'Tap to collapse' : 'Tap to expand'}</p>
+
           </button>
 
 
@@ -246,7 +255,7 @@ export default function DashboardPage() {
               <h2 className="text-xl font-semibold text-gray-600 p-6">Recent Expenses</h2>
               <button
                 onClick={() => setShowForm(!showForm)}
-                className="bg-purple-700 text-white px-6 py-2 rounded-lg hover:bg-purple-700 font-medium mr-6"
+                className="bg-app-primary text-white px-6 py-2 rounded-lg hover:bg-purple-500 font-medium mr-6"
               >
                 {showForm ? "Cancel" : "Add Expense"}
               </button>
@@ -280,7 +289,7 @@ export default function DashboardPage() {
                       </p>
                     </div>
                     <p className="text-lg font-bold text-app-primary">
-                      ${expense.amount.toFixed(2)}
+                      {expense.amount.toFixed(2)}
                     </p>
                   </div>
                 ))
