@@ -28,6 +28,11 @@ interface BudgetAdvice {
   summary: string
 }
 
+import { API_ROUTES } from "@/lib/constants"
+import { toast } from "sonner"
+
+// ... imports
+
 export default function BudgetSummary({ userId, budgets }: { userId: number, budgets: { id?: number; category: string; amount: number }[] }) {
   const [income, setIncome] = useState("")
   const [isLoading, setIsLoading] = useState(false)
@@ -46,7 +51,7 @@ export default function BudgetSummary({ userId, budgets }: { userId: number, bud
     setAdvice(null)
 
     try {
-      const res = await fetch("/api/ai/budget-advisor", {
+      const res = await fetch(API_ROUTES.BUDGET_ADVISOR, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -74,7 +79,7 @@ export default function BudgetSummary({ userId, budgets }: { userId: number, bud
     if (!advice) return
 
     try {
-      const res = await fetch("/api/budgets", {
+      const res = await fetch(API_ROUTES.BUDGETS, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -90,9 +95,10 @@ export default function BudgetSummary({ userId, budgets }: { userId: number, bud
         throw new Error("Failed to save budgets")
       }
 
+      toast.success("Budgets saved successfully!")
     } catch (err) {
       console.error(err)
-      alert("❌ Failed to save budgets.")
+      toast.error("Failed to save budgets.")
     }
   }
 

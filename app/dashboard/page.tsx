@@ -5,6 +5,7 @@ import { useSession, signOut } from "next-auth/react"
 import { useRouter } from "next/navigation"
 import { useEffect, useState } from "react"
 import PieChart from "../components/PieChart"
+import { motion, AnimatePresence } from "framer-motion"
 
 interface Expense {
   id: number
@@ -179,69 +180,98 @@ export default function DashboardPage() {
                       <h2 className="text-lg font-semibold text-app-primary">Money Out</h2>
                       <p className="text-4xl font-bold text-app-primary">{totalSpending.toFixed(2)}</p>
                     </div>
-                    <div className="text-right">
+                    <div className="text-left">
                       <h2 className="text-md font-sans text-gray-400">Total Budget</h2>
                       <p className="text-3xl font-semibold text-gray-400">{totalBudget.toFixed(2)}</p>
                     </div>
                   </div>
 
-                  <div className="p-3 w-1/2">
+                  {/* Pie Chart - fades out when expanded */}
+                  <motion.div
+                    className="w-7/12"
+                    animate={{
+                      opacity: expanded ? 0 : 1,
+                      scale: expanded ? 0.8 : 1
+                    }}
+                    transition={{ duration: 0.3 }}
+                  >
                     <PieChart slices={slices.slice(0, 6)} size={160} />
-                  </div>
+                  </motion.div>
 
 
-                  <div className="grid grid-cols-1 items-start flex-row gap-2 w-[20vw] mr-5">
+                  <div className="grid grid-cols-1 items-start flex-row gap-2 w-[25vw] mr-5">
+                    <AnimatePresence initial={false}>
+                      {(expanded ? sortedCategoryEntries : top5).map((t, idx) => {
+                        const budgetAmount = budgetMap[t.category]
+                        const over = typeof budgetAmount !== "undefined" && t.spent > budgetAmount
+                        const maxSpent = Math.max(...sortedCategoryEntries.map(e => e.spent))
+                        const barWidth = expanded ? (t.spent / maxSpent) * 120 : 0 // Max bar width 120px
 
-                    {top5.map((t, idx) => (
-                      <div key={t.category} className="flex flex-row items-center gap-3">
-                        <div style={{ width: 12, height: 12, background: colorPalette[idx % colorPalette.length], borderRadius: 3 }} />
-                        <div className="flex justify-between w-full">
-                          <div className="text-sm text-gray-700 text-left">{t.category}</div>
-                          <div className="text-sm text-gray-500 text-right">{t.spent.toFixed(2)}</div>
-                        </div>
-                      </div>
-                    ))}
+                        return (
+                          <motion.div
+                            key={t.category}
+                            className="flex flex-row items-center relative"
+                            style={{ height: 32 }}
+                            initial={{ opacity: 0, y: -10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, y: -10 }}
+                            transition={{
+                              delay: idx * 0.05,
+                              duration: 0.3
+                            }}
+                            layout
+                          >
+                            {/* Animated color indicator / bar */}
+                            <motion.div
+                              className="absolute"
+                              style={{
+                                height: 12,
+                                background: colorPalette[idx % colorPalette.length],
+                                borderRadius: 3,
+                                left: 0,
+                                top: '50%',
+                                transform: 'translateY(-50%)'
+                              }}
+                              animate={{
+                                width: expanded ? barWidth : 12,
+                                left: expanded ? `calc(30px - ${barWidth}px)` : 0
+                              }}
+                              transition={{
+                                type: "spring",
+                                stiffness: 300,
+                                damping: 30,
+                                delay: 0.1 + (idx * 0.03)
+                              }}
+                            />
+
+                            {/* Text container - positioned absolutely to stay in place */}
+                            <div className="absolute left-0 right-0 flex items-center gap-3 pl-[30px]">
+                              <div className="flex justify-between w-full">
+                                <div className="text-sm text-gray-700 text-left">{t.category}</div>
+                                <div className="text-right">
+                                  {typeof budgetAmount !== "undefined" ? (
+                                    <p>
+                                      <span className={`text-sm ${over ? 'text-red-900' : 'text-app-primary'}`}>{t.spent.toFixed(2)}</span>
+                                      <span className="text-xs text-gray-400 mx-1">/</span>
+                                      <span className="text-xs text-gray-400">{budgetAmount.toFixed(2)}</span>
+                                    </p>
+                                  ) : (
+                                    <p className="text-sm text-gray-500">{t.spent.toFixed(2)}</p>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+                          </motion.div>
+                        )
+                      })}
+                    </AnimatePresence>
                   </div>
 
 
                 </div>
               </div>
 
-              {/* Expanded spending details */}
-              {expanded && (
-                <div className="flex flex-col mt-6 gap-2 p-5">
-                  {
-                    allCategories
-                      .sort((a, b) => (categoryTotals[b] || 0) - (categoryTotals[a] || 0))
-                      .map((category) => {
-                        const spent = categoryTotals[category] || 0
-                        const budgetAmount = budgetMap[category]
-
-                        const over = typeof budgetAmount !== "undefined" && spent > budgetAmount
-
-                        return (
-                          <div key={category} className="flex justify-between items-center text-sm w-full">
-                            <span className="text-gray-700">{category}</span>
-
-                            <div className="text-right">
-                              {typeof budgetAmount !== "undefined" ? (
-                                <p className={`font-semibold ${over ? 'text-red-900' : 'text-app-primary'}`}>
-                                  {spent.toFixed(2)} 
-                                  <span className="text-xs text-gray-400">/</span> 
-                                  <span className="text-xs text-gray-600">{budgetAmount.toFixed(2)}</span>
-                                </p>
-                              ) : (
-                                <p className="font-semibold text-gray-500">{spent.toFixed(2)}</p>
-                              )}
-                            </div>
-                          </div>
-                        )
-                      }
-                      )}
-                </div>
-              )}
-
-              <p className="text-[10px] text-gray-400 text-right mr-5"> {expanded ? 'Tap to collapse' : 'Tap to expand'}</p>
+              <p className="text-[10px] text-gray-400 text-right mr-5 mt-2"> {expanded ? 'Tap to collapse' : 'Tap to expand'}</p>
             </div>
 
 

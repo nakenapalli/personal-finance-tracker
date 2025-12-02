@@ -29,6 +29,8 @@ model Expense {
   createdAt DateTime @default(now())
   userId    Int
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
 }
 
 // Add new Budget model
@@ -42,4 +44,5 @@ model Budget {
   updatedAt DateTime @updatedAt
   
   @@unique([userId, category]) // One budget per category per user
+  @@index([userId])
 }
